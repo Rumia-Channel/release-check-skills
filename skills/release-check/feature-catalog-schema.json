@@ -1,0 +1,107 @@
+{
+  "$comment": "Top-level contract for feature-catalog.json. validate-feature-catalog.cjs interprets and checks this schema directly.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "description": "An externally meaningful user feature or cross-cutting infrastructure surface with reconstructed intent and contracts.",
+    "properties": {
+      "feature_id": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,127}$",
+        "description": "Stable source-derived identifier (must not contain '::')."
+      },
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "visibleContent": true
+      },
+      "kind": {
+        "type": "string",
+        "enum": ["user_feature", "cross_cutting"]
+      },
+      "purpose": {
+        "type": ["string", "null"],
+        "visibleContent": true
+      },
+      "intent_status": {
+        "type": "string",
+        "enum": ["documented", "inferred", "unknown"]
+      },
+      "intent_evidence": {
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "type": "object",
+          "properties": {
+            "ref": {
+              "type": "string",
+              "minLength": 1,
+              "visibleContent": true
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "detail": {
+              "type": "string",
+              "minLength": 1,
+              "visibleContent": true
+            }
+          },
+          "required": ["ref", "detail"],
+          "additionalProperties": false
+        }
+      },
+      "entrypoints": {
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "minLength": 1,
+          "visibleContent": true
+        }
+      },
+      "contracts": {
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "minLength": 1,
+          "visibleContent": true
+        }
+      },
+      "dependencies": {
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "minLength": 1,
+          "visibleContent": true
+        }
+      },
+      "status": {
+        "type": "string",
+        "enum": ["in_scope", "out_of_scope"]
+      },
+      "exclusion_reason": {
+        "type": ["string", "null"],
+        "visibleContent": true
+      }
+    },
+    "required": [
+      "feature_id",
+      "name",
+      "kind",
+      "purpose",
+      "intent_status",
+      "intent_evidence",
+      "entrypoints",
+      "contracts",
+      "dependencies",
+      "status",
+      "exclusion_reason"
+    ],
+    "additionalProperties": false
+  }
+}
