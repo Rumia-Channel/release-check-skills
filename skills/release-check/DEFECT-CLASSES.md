@@ -21,6 +21,8 @@ Use `confirmed_defect` when source evidence and bounded local HEAD validation pr
 > **AI, agent, and LLM workflow targets** (tool schemas/dispatch, prompt assembly, structured output parsing, agent loops/budgets, RAG indexing, MCP clients/servers): use [AI-AGENT-AND-LLM-WORKFLOWS.md](AI-AGENT-AND-LLM-WORKFLOWS.md).
 >
 > **Native, desktop, and systems targets** (C/C++/Rust/native handles, threads/locks, FFI/ABI, local IPC, OS/filesystem assumptions, installers/updaters): use [NATIVE-DESKTOP-AND-SYSTEMS.md](NATIVE-DESKTOP-AND-SYSTEMS.md).
+>
+> **Third-party library, runtime, and external service targets** (pinned vs installed SDK/framework APIs, floating dependency ranges, EOL runtimes/base images, external SaaS/Cloud/AI APIs, hardcoded model IDs, API version headers, upstream webhook/response schema drift): use [DEPENDENCIES-AND-EXTERNAL-SERVICES.md](DEPENDENCIES-AND-EXTERNAL-SERVICES.md).
 
 **Hollow, stubbed, and unwired implementations** (subagent_type: `general`)
 Features that appear present in UI, CLI help, API schemas, or config files yet silently do nothing, execute placeholder logic, or drop inputs before reaching the real worker:
@@ -57,8 +59,8 @@ Two components communicate across a boundary while holding incompatible assumpti
 - Caller/UI/client expecting one field name, enum value, timestamp unit (seconds vs milliseconds), encoding, nullability, or error envelope while server/worker emits or reads another.
 - Producer and consumer parsing or normalizing the same value differently (case folding, path normalization, trimming, query-array encoding, decimal formatting).
 - Validation applied at one entrypoint (e.g., UI or REST handler) while sibling entrypoints (CLI, batch import, GraphQL, internal job) accept the same state without enforcing the invariant.
-- Mocked test fixtures encoding an outdated or idealized contract that drifted away from actual downstream behavior.
-- **Recommended local verification**: `real_env_test` replacing mocked adapters with real local collaborators + `virtual_test` sibling-path parity check feeding identical valid/edge payloads to UI/API/CLI/batch entrypoints and schema validators.
+- Mocked test fixtures encoding an outdated or idealized contract that drifted away from actual downstream behavior, installed library signatures, or the external service's latest official specification.
+- **Recommended local verification**: `real_env_test` replacing mocked adapters with real local collaborators/installed libraries + `virtual_test` sibling-path parity check and latest-spec outbound-request capture / response replay (see [TESTING-AND-HARNESSES.md](TESTING-AND-HARNESSES.md) and [DEPENDENCIES-AND-EXTERNAL-SERVICES.md](DEPENDENCIES-AND-EXTERNAL-SERVICES.md)).
 
 **State consistency, side effects, and lifecycle defects** (subagent_type: `general`)
 Operations that leave persistent stores, caches, derived views, or runtime resources inconsistent across time:
@@ -113,5 +115,6 @@ Perform a literal, thorough sweep for blatant functional defects often overlooke
 - Copy-paste bugs: duplicated branches checking the wrong variable, swapped arguments (`(height, width)` vs `(width, height)`), inverted boolean conditions, or unreachable `else if` clauses.
 - Lying status/health endpoints or CLI commands that unconditionally return `OK` / exit `0` without checking real readiness or operation success.
 - Dead configuration or environment keys documented in README/example configs whose code lookup uses a different name or wrong type conversion (`"false"` treated as truthy!).
+- Hardcoded retired/deprecated LLM model IDs, obsolete external API version headers, EOL runtime/base image tags, or unpinned `:latest`/`*` dependency ranges contradicting current official specifications.
 
 **Important**: Every item found here still requires tracing the full reachable path and establishing real caller impact (preferring a `real_env_test` against built/packaged output or a minimal `virtual_test` invoking the broken flag/probe/manifest) before proposing a finding. A dead comment in unreachable test code is a `quality_note`, not a `confirmed_defect`.

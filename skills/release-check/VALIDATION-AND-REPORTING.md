@@ -29,10 +29,14 @@ the promotion procedure block below verbatim. Never use unpromoted scratch files
    `unknown`) if the behavior change is real and not clearly an unintended defect.
 4. For proposed `confirmed_defect`: audit the hunter's `test_kind` and `virtualized_boundaries`
    per TESTING-AND-HARNESSES.md—reject any tautological harness that copies logic, feeds
-   unreachable inputs, or mocks internal target wiring. Independently run a minimal real
-   (`real_env_test`) or unmocked virtual (`virtual_test`) reproduction at HEAD in your own
-   `scratch/`. Verify inputs, conditions, impact, and that the proposed fix and regression
-   test enforce the invariant without over-mocking.
+   unreachable inputs, or mocks internal target wiring. For `dependency_or_service_spec`
+   claims, verify the cited installed library source/types OR retrieved official documentation
+   and retrieval date (reject claims based solely on unverified model memory, and demote to
+   `needs_validation` if behavior depends on an unobservable account-pinned API version or
+   offline doc access). Independently run a minimal real (`real_env_test`) or unmocked virtual
+   (`virtual_test`) reproduction at HEAD in your own `scratch/`. Verify inputs, conditions,
+   impact, and that the proposed fix and regression test enforce the invariant without
+   over-mocking.
 5. For proposed `confirmed_regression` or `confirmed_change`: verify `base_ref !== null`,
    reproduce like-for-like BASE and HEAD checks (`base_head_differential` or matching
    `real_env_test`/`virtual_test` runs) in clean `scratch/base/` and `scratch/head/` copies
@@ -157,7 +161,7 @@ Include these sections in order:
 4. **Confirmed Implementation Defects**: Table (`severity`, `title`, `feature_id`, `defect_category`, `head_observed_result`) and concise summaries for hidden malfunctions in HEAD (noting whether pre-existing at BASE or unknown).
 5. **Confirmed Behavior Changes**: Table (`intent_classification`, `title`, `feature_id`, `impact_summary`) summarizing BASE→HEAD behavioral shifts and compatibility/migration notes (no defect severity).
 6. **Needs Validation**: Separate table listing `title`, `feature_id`, `claimed_verdict`, repository trace, exact blockers, and safe `local`/`environment`/`owner_intent` resolution steps. Zero severity.
-7. **Quality Notes & Positive Verified Invariants**: Non-defect maintainability/test-hygiene observations from `quality_notes`, plus positive invariants demonstrated locally.
+7. **Quality Notes, Dependency/Service Spec Status & Positive Verified Invariants**: Non-defect maintainability/test-hygiene observations from `quality_notes`, summary of checked pinned/installed libraries and external service specifications (noting deprecation/sunset advisories and whether official online doc lookup ran or was offline-limited), plus positive invariants demonstrated locally.
 8. **Coverage Summary**: Counts from `coverage-ledger.json` by status, across all 6 release axes, breakdown by `test_kind` (`source_trace`, `existing_test`, `real_env_test`, `virtual_test`, `base_head_differential`), summary of any virtualized external boundaries vs fully real local checks, `deferred`/`blocked`/`out_of_scope` reasons, and final coverage-critic result.
 9. **Next Actions & Human Decision Points**: Ranked actions, missing acceptance criteria, test blind spots to close, and owner decisions (conflicting intent, intentional breaking changes, migration sign-off, residual risk acceptance).
 

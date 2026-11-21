@@ -58,7 +58,12 @@ HUNT HIDDEN MALFUNCTIONS ACTIVELY:
    pagination, ordering, case sensitivity, encoding, lifecycle timing).
 4. Distrust green tests until inspected: read existing tests for the assigned path. Check
    whether mocks/stubs bypass the broken integration, whether assertions only test status
-   or non-null without checking state/output, or whether tests assert buggy behavior.
+   or non-null without checking state/output, whether service mocks encode outdated external
+   API schemas, or whether tests assert buggy behavior.
+5. Check library and external service specifications: verify high-risk calls against actual
+   installed library types/source (lockfile/node_modules/vendor) and retrieved official
+   documentation/changelogs/sunset notices (never relying on unverified memory) to expose
+   silently ignored SDK options, retired endpoints/model IDs, and upstream response drift.
 
 WORK FROM A CONCRETE INVARIANT:
 1. Name the feature, caller perspective, and advertised or inferred behavioral contract.
@@ -100,7 +105,10 @@ your `scratch/` directory. Choose the strongest safe test level:
       finishes after request #2, parallel bursts, AbortController/SIGTERM cleanup);
   (e) cold-start, restart, prior-version upgrade/migration, and rollback fixtures;
   (f) packaged/built-artifact consumer runs (dist/, bin, piped stdin, --json stdout purity);
-  (g) deterministic fake external protocol/LLM/MCP response streams.
+  (g) deterministic fake external protocol/LLM/MCP response streams;
+  (h) latest library & external-service spec conformance harnesses (unmocked installed-library
+      calls, outbound-request capture diffed against retrieved official specs, and replay of
+      officially documented current response/webhook/error schemas).
 - `base_head_differential`: run identical real or virtual harnesses against disposable
   `scratch/base/` and `scratch/head/` checkouts under verified comparable env/deps/fixtures.
 
@@ -280,6 +288,7 @@ The coverage critic specifically hunts:
 - In-scope user features missing any of the 6 release axes (`primary`, `boundary`, `error`, `integration`, `compatibility`, `lifecycle`);
 - Units marked `covered` solely via `source_trace` or mock-heavy `existing_test` when a bounded `real_env_test` or `virtual_test` (such as an unwired-option probe, fault-injection harness, built-artifact run, or async race test) was safely executable inside the sandbox;
 - Units whose `virtualized_boundaries` improperly mocked internal target modules under audit instead of external boundaries;
+- Unchecked pinned/installed library APIs, dependency bumps between BASE and HEAD, or hardcoded external service endpoints, API version headers, and model IDs missing specification verification;
 - Unjustified exclusions in `excluded_blocks` or missing companion domain coverage;
 - Prior `needs_validation` or `base_ref`→`head_ref` changed paths left uncovered.
 

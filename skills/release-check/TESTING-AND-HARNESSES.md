@@ -68,7 +68,7 @@ When `base_ref` is non-null and a regression or behavior change is suspected:
 
 When existing tests are missing, over-mocked, or blind to a suspected hidden malfunction, write a **minimal, deterministic virtual test harness** inside `scratch/harnesses/<name>` that imports or invokes the **real target code** while virtualizing *only* external boundaries.
 
-### Seven core virtual-test blueprints
+### Eight core virtual-test blueprints
 
 #### 1. Unwired-option & hollow-implementation A/B differential probe
 - **Target defects**: CLI flags, API parameters, UI toggles, config keys, or feature flags parsed at the boundary and silently ignored, shadowed, or overridden by defaults.
@@ -111,6 +111,13 @@ When existing tests are missing, over-mocked, or blind to a suspected hidden mal
 #### 7. Deterministic fake external protocol / LLM / MCP harness
 - **Target defects**: Tool-schema vs handler dispatch mismatch, crashing on markdown-fenced/partial streaming JSON, swallowed tool errors, unbounded agent loops, webhook replay/out-of-order bugs, pagination stopping after page 1.
 - **How to build**: Stand up a tiny local loopback or stdio script inside `scratch/` that replays deterministic edge protocol responses (multi-page API with changing cursor, duplicate webhook event, truncated JSON chunk, malformed tool arguments, repeated tool error) into the real target client/agent loop—zero live API calls, zero paid spend.
+
+#### 8. Latest library & external-service specification conformance harness
+- **Target defects**: Code misusing the actually installed/pinned library version (renamed options, changed defaults, removed signatures); outbound HTTP/SDK requests sending retired model IDs, obsolete API-version headers, removed fields, or deprecated endpoints; target parsers crashing or dropping fields when fed the external service's latest officially documented response/webhook/error payload.
+- **How to build**:
+  1. **Installed-library unmocked check**: Import the real installed library/SDK (never mocked!) inside `scratch/` and exercise the exact target wrapper with realistic inputs to prove whether options/defaults/error classes actually work as target code assumes.
+  2. **Outbound-request capture check**: Point the real target service client at a local loopback capture server in `scratch/` (listing the external service in `virtualized_boundaries`), trigger the real feature path, record exact HTTP method, URL path, headers (API version, auth scheme, content-type), model ID, and JSON body, and diff them against the authoritative retrieved official specification.
+  3. **Latest-spec response & webhook replay**: Replay exact response, error, rate-limit, and webhook payloads documented in the external service's latest official docs (including newly optional/nullable fields or updated schema fields) into the real target handler without mocking internal parsing or domain logic.
 
 ## Part 3: Mock-boundary discipline and anti-tautology rules
 

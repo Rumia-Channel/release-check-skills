@@ -191,8 +191,10 @@ function expectInvalid(findings, snippet) {
 }
 
 test('all five valid verdicts pass in lexicographic order', () => {
+  const defectSpec = makeConfirmedDefect('a-defect');
+  defectSpec.defect_category = 'dependency_or_service_spec';
   const docs = [
-    makeConfirmedDefect(),
+    defectSpec,
     makeConfirmedRegression(),
     makeConfirmedChange(),
     makeNeedsValidation(),

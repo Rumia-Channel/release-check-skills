@@ -6,16 +6,17 @@ The parent initializes `run-metadata.json`, applies the strict pre-reconnaissanc
 
 Launch the baseline `research` agents in parallel (`1a`–`1d`, plus `1e` when `base_ref` is set). They return structured source facts with repository-relative `file:line` references and do not write files.
 
-**Agent 1a: Product, stack, build/packaging, and local operation**
+**Agent 1a: Product, stack, dependencies, external services, and local operation**
 
 ```text
 Read the target at <target>. Do not use network access or execute target code. Return:
 1. Product type, primary user personas, operators, and core workflows.
-2. Languages, frameworks, runtimes, package boundaries, build system, and packaging/distribution targets (CLI bin, library exports, web app, container, desktop installer, plugin).
-3. Repository-relative entrypoints and subsystem boundaries, highlighting differences between dev execution and built/packaged outputs.
-4. Exact build and test commands that could run offline with locally installed dependencies, their expected write locations, and target-controlled inputs they read. Do not run them.
-5. Comparable software or protocol baseline visible from local docs and dependencies, if source-grounded (otherwise state none).
-6. Missing local toolchains, compilers, runtimes, or build artifacts that limit local verification.
+2. Languages, frameworks, runtimes (including version pins/Docker base images), package boundaries, build system, and packaging/distribution targets (CLI bin, library exports, web app, container, desktop installer, plugin).
+3. Direct libraries/SDKs (manifest version ranges vs lockfile pinned versions and locally installed paths), plus every external service/SaaS/cloud/AI API referenced in source (base URLs, hardcoded API version headers, model IDs, webhook protocols, OAuth scopes).
+4. Repository-relative entrypoints and subsystem boundaries, highlighting differences between dev execution and built/packaged outputs.
+5. Exact build and test commands that could run offline with locally installed dependencies, their expected write locations, and target-controlled inputs they read. Do not run them.
+6. Comparable software or protocol baseline visible from local docs and dependencies, if source-grounded (otherwise state none).
+7. Missing local toolchains, compilers, runtimes, or build artifacts that limit local verification.
 Return only observed facts with repository-relative file:line references.
 ```
 
@@ -65,7 +66,27 @@ Inspect the repository diff between base_ref (<base_ref>) and head_ref (<head_re
 Return repository-relative file:line and revision citations.
 ```
 
-Add focused `research` agents for materially distinct subsystems, frontends, native components, or deployment modes that the baseline agents do not cover. Enforce the budget gate in `SKILL.md` before launching any focused agent: if the budget blocks a focused agent, launch nothing for it, seed the unmapped area as `deferred` with `budget_cannot_reserve_critics_and_validation`, and disclose the gap.
+**Agent 1f (launch when key third-party frameworks/SDKs or external services exist and budget permits): Library and external service latest-specification check**
+
+```text
+Inspect manifests, lockfiles, locally installed library types/source (read-only), and
+external service clients identified by Agent 1a. Do not execute target code or probe live
+API endpoints. When authorized read-only web/doc lookup is available, consult authoritative
+official documentation, changelogs, release notes, and sunset/deprecation notices (recording
+exact source URL/doc name and retrieval date); never rely on unverified memory. Return:
+1. Installed/pinned library API mismatches: methods, options, middleware signatures, defaults,
+   or error classes called by target code that differ from the actual installed/pinned version.
+2. Latest-release and runtime drift: pinned/floating library or runtime versions with known
+   breaking changes, deprecations, EOL status, or changed defaults in current official releases.
+3. External service specification drift: hardcoded endpoints, API-version headers, LLM model
+   IDs, OAuth scopes, webhook signature/payload formats, or pagination/rate-limit assumptions
+   that conflict with current official service specifications or sunset notices.
+4. Offline/visibility gaps: every library or external service whose latest specification could
+   not be verified from official docs (mark explicitly for needs_validation/limitations).
+Return facts with repository-relative file:line citations and dated official doc references.
+```
+
+Add focused `research` agents for materially distinct subsystems, frontends, native components, or deployment modes that the baseline agents do not cover. Enforce the budget gate in `SKILL.md` before launching any focused agent (`1f` included): if the budget blocks a focused agent, launch nothing for it, seed the unmapped area as `deferred` with `budget_cannot_reserve_critics_and_validation`, and disclose the gap.
 
 ## Prior-run input
 
@@ -88,11 +109,12 @@ The parent synthesizes `<output-dir>/system-map.md` with a hard cap of about 1,0
 2. Comparable-software baseline from Agent 1a, if source-grounded (omit when absent).
 3. Tech stack, packaging targets, dev-vs-built differences, and offline sandbox/toolchain limits.
 4. Critical end-to-end data/state flows, sibling paths, and structural malfunction hotspots (unwired controls, silent catches, contract mismatches).
-5. Test-suite blind spots (mocked-away wiring, weak assertions, untested failure/lifecycle modes).
-6. Revision diff blast radius (`base_ref` → `head_ref`), when applicable.
-7. Repository-relative starting paths per subsystem.
-8. Prior coverage gaps, changed-source revalidation targets, and carried exclusions.
-9. Companion-selection summary derived from [DEFECT-CLASSES.md](DEFECT-CLASSES.md): selected companion files and the concrete boundaries/subsystems requiring them.
+5. Test-suite blind spots (mocked-away wiring, weak assertions, outdated service mocks, untested failure/lifecycle modes).
+6. Pinned vs latest library, runtime, and external service specification findings, deprecation/sunset risks, and whether official doc lookup ran or was offline-limited.
+7. Revision diff blast radius (`base_ref` → `head_ref`), when applicable.
+8. Repository-relative starting paths per subsystem.
+9. Prior coverage gaps, changed-source revalidation targets, and carried exclusions.
+10. Companion-selection summary derived from [DEFECT-CLASSES.md](DEFECT-CLASSES.md): selected companion files and the concrete boundaries/subsystems requiring them.
 
 Keep assignment-level ordinary blocks, selected companion blocks, and excluded blocks with reasons inside each unit of `coverage-ledger.json`, not inside `system-map.md`. Select a companion file only because reconnaissance found the corresponding functional surface described in its `When to use this file` section—never merely because a dependency name exists.
 

@@ -43,6 +43,8 @@ In guidance mode, do not retain target-controlled files. In full audit mode, onl
 
 Use dummy fixtures, dummy state, and mocked external integrations. Do not probe deployed endpoints, live external APIs, shared infrastructure, production databases, real credentials, or paid services. Do not stress availability, publish packages, alter deployments, or continue beyond the minimum local effect needed to establish the malfunction or divergence.
 
+**Read-only official specification lookup (outside target execution):** While target-controlled processes must never receive network access, the parent or a read-only `research` agent may—when authorized read-only web/doc tools are available—consult official library documentation, changelogs, migration guides, and external service API specifications strictly to compare pinned/referenced versions against current published contracts (see [DEPENDENCIES-AND-EXTERNAL-SERVICES.md](DEPENDENCIES-AND-EXTERNAL-SERVICES.md)). Record the exact source and retrieval date for every external spec citation; never rely on unverified training memory. If online doc lookup is unavailable, verify installed/pinned library contracts locally and record unverified external service specs as `needs_validation` or explicit run limitations.
+
 ## Full audit setup
 
 In full audit mode, resolve these values before reconnaissance:
@@ -227,3 +229,4 @@ Terminate in exactly one of two states: (a) all Phase 6 artifacts are written an
 12. Editing target source files (or writing virtual tests into the target repository instead of `scratch/`) during an audit instead of recommending fixes and regression tests.
 13. Writing tautological virtual tests that re-implement target logic, mock out internal wiring under audit, or launder guessed behavior as a documented contract.
 14. Closing a unit with `source_trace` or a mock-heavy `existing_test` when a bounded `real_env_test` or `virtual_test` is safely executable in the sandbox.
+15. Claiming a library API or external service endpoint/model is deprecated, removed, or changed based solely on unverified model memory without inspecting installed package types/source or citing retrieved authoritative official documentation.

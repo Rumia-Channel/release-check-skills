@@ -54,6 +54,7 @@
               "compatibility",
               "cross_feature",
               "packaging_or_config",
+              "dependency_or_service_spec",
               "other"
             ]
           },
@@ -388,6 +389,7 @@
               "compatibility",
               "cross_feature",
               "packaging_or_config",
+              "dependency_or_service_spec",
               "other"
             ]
           },

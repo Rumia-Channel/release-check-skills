@@ -11,8 +11,8 @@
 1. **テストの盲点と配線切れ（Wiring）を直接狙う偵察（Phase 1）**
    - 既存テストがモックで本番配線を迂回していないか、アサーションが甘くないか、エラー/境界/ライフサイクルがテスト漏れしていないかを最初に棚卸しします。
    - フラグ・UI操作・設定値が末端処理まで本当に届いているか、エラーが握りつぶされていないか、仕様・ドキュメント・テスト間の矛盾がないかを `feature-catalog.json` と `system-map.md` に記録します。
-2. **10のコア欠陥クラス + 8つのドメイン別コンパニオンによる深い探索（Phase 2）**
-   - 空実装・未配線・サイレントフェイル・ビジネスロジック境界・レイヤー間の契約ズレ・状態整合性・非同期/並行競合・後方互換性・機能間干渉・明らかな壊れ方まで、具体的な探索手順と検証ルールで独立ハンターを動かします。
+2. **10のコア欠陥クラス + 9つのドメイン別コンパニオンによる深い探索（Phase 2）**
+   - 空実装・未配線・サイレントフェイル・ビジネスロジック境界・レイヤー間の契約ズレ・状態整合性・非同期/並行競合・後方互換性・機能間干渉・利用ライブラリ/外部サービスの最新仕様ズレ・明らかな壊れ方まで、具体的な探索手順と検証ルールで独立ハンターを動かします。
 3. **「HEAD単体の不具合（`confirmed_defect`）」と「リグレッション（`confirmed_regression`）」を分離**
    - 比較用のBASEコミットがない場合でも、HEAD実装に潜む隠れた不具合を証拠付きで `confirmed_defect` として確定できます。
    - 比較用のBASEがある場合は、同条件での BASE/HEAD 観測に基づいて `confirmed_regression`（意図しない破壊）と `confirmed_change`（仕様変更・意図不明の変更）を厳密に分けます。
@@ -26,7 +26,7 @@
 
 | フェーズ | 内容 | 主な成果物 |
 |---|---|---|
-| **1. Reconnaissance** | 製品構造・ビルド/配布物・機能意図・エンドツーエンド配線・テストの盲点・実テスト環境/仮想テスト境界・BASE→HEAD影響範囲を並列調査し、決定的台帳を初期化 | `run-metadata.json`, `system-map.md`, `feature-catalog.json`, `coverage-ledger.json` |
+| **1. Reconnaissance** | 製品構造・ビルド/配布物・機能意図・エンドツーエンド配線・テストの盲点・実テスト環境/仮想テスト境界・利用ライブラリ/外部サービスの最新仕様チェック（Agent 1f）・BASE→HEAD影響範囲を並列調査し、決定的台帳を初期化 | `run-metadata.json`, `system-map.md`, `feature-catalog.json`, `coverage-ledger.json` |
 | **2. Coverage-led Hunting** | 優先度順に分離されたハンターへ台帳ユニットを割り当て、ソース追跡＋隔離テスト環境での実テスト（`real_env_test`）＋`scratch/`内の仮想テスト（`virtual_test`）を実行。各波の直後にCriticが漏れ・モック依存・浅い閉鎖を再割り当て | 更新された `coverage-ledger.json`（`attempts` 履歴・`test_kind`・`virtualized_boundaries` 付き） |
 | **3. Adversarial Validation** | すべての候補（および過去ランの引継ぎ候補）を、発見者とは別のフレッシュな検証エージェントが反証視点で再検証。仮想テストの過剰モック・トートロジーも監査し、独立にローカル再現 | 検証済み判定と根拠チェック |
 | **4. Structured Output** | 5種類の厳密な判定を `findings.json` へ出力し、4つのゼロ依存Node.jsスクリプトで構造・相互参照・完了ゲートを検査 | `findings.json` |
@@ -44,7 +44,7 @@
 | `virtual_test` | **仮想テスト（動的ハーネス作成・実行）**: 監査エージェントが `scratch/` に使い捨ての検証ハーネスを作成し、外部境界のみを仮想化して対象の実コードを直接叩くテスト | 既存テストが覆っていない未配線、エラー握りつぶし、境界値、非同期競合、移行破損などの隠れた機能不全 |
 | `base_head_differential` | 使い捨ての `scratch/base/` と `scratch/head/` に同一の実テストまたは仮想テストを同条件で流し込む差分検証 | BASE成立→HEAD破損の `confirmed_regression` と、既存バグ（`confirmed_defect`）・仕様変更（`confirmed_change`）の切り分け |
 
-### 仮想テストの7つの標準パターン
+### 仮想テストの8つの標準パターン
 
 1. **未配線・空実装 A/B差分プローブ**: 公開入口に対しオプション・フラグ・設定を ON/OFF（値Aと値B）で2回呼び出し、出力や副作用が仕様どおりに変化することを検証。
 2. **外部境界限定フォルトインジェクション**: 対象内部はすべて実コードのまま、外部端（ローカルループバックのHTTP 500/429/破損JSON/途中切断、読み取り専用ディレクトリ、3段階書き込みの2段階目失敗など）に障害を注入し、エラー伝播とロールバックを検証。
@@ -53,6 +53,18 @@
 5. **コールドスタート・再起動・アップグレード/ロールバック検証**: 空環境での初回起動、前バージョンデータ/設定からの移行、論理削除後の同名再作成、再起動後のキャッシュ/DB整合を検証。
 6. **ビルド済み成果物・パッケージ消費者テスト**: `scratch/` の中立ディレクトリからビルド済みパッケージやCLIバイナリを実際に呼び出し、`devDependencies`漏れ、同梱アセット欠落、`--json` 時の標準出力汚染、非TTYパイプ入力を検証。
 7. **決定論的プロトコル/LLM/MCPスタブ検証**: 本番APIや課金LLMを一切呼ばず、ローカルスタブから壊れたJSON・Markdown囲みJSON・未知ツール呼び出し・複数ページ応答・重複Webhookを流して実ループとパーサーの耐性を検証。
+8. **利用ライブラリ・外部サービス最新仕様準拠ハーネス**: インストール済み実ライブラリをモックせず呼び出してオプション/デフォルト挙動を検証するほか、ローカルループバックで対象コードが送信する実リクエスト（URL・APIバージョンヘッダ・モデルID・JSONボディ）を捕捉して公式最新仕様と突合し、公式ドキュメント上の最新レスポンス/Webhook/エラー形式を実パーサーへリプレイして仕様ズレを検証。
+
+## 利用ライブラリ・外部サービスの最新仕様チェック
+
+モックされた単体テストが通っていても、「インストール済みライブラリのオプション名変更や挙動変更」「廃止・サンセット済みの外部APIエンドポイントやLLMモデルID」「古いAPIバージョンヘッダやWebhookスキーマ前提」は本番で静かに、あるいは即座に壊れます。本スキルでは [DEPENDENCIES-AND-EXTERNAL-SERVICES.md](skills/release-check/DEPENDENCIES-AND-EXTERNAL-SERVICES.md) と Phase 1 の **Agent 1f** により、以下を段階的に監査します。
+
+1. **ローカル一次情報（常にオフライン実施）**: `package.json`・`pyproject.toml`・`Cargo.toml`・`go.mod`・`Dockerfile`・各ロックファイル、およびインストール済みライブラリの実装・型定義（`.d.ts` 等）を読み取り専用で照合し、固定/導入バージョンに対するAPI誤用や無言のオプション無視を検出します。
+2. **公式最新仕様との突合（読み取り専用ドキュメント調査が可能な場合）**: 対象コードを実行せず、親または `research` エージェントが公式ドキュメント・チェンジログ・マイグレーションガイド・廃止/サンセット告知を取得日付きで参照し、外部サービスAPI・モデルID・ランタイムEOL・破壊的変更との乖離を検証します。**LLMの学習記憶だけを根拠にした「最新仕様」主張は禁止**しています。
+3. **ローカル再現と厳格な判定切り分け**:
+   - 導入済みライブラリの誤用や、公式ドキュメントで廃止/非互換が確定しローカル仮想テストで不適合な送信リクエストまたは最新レスポンス処理の失敗を再現できた場合 → `confirmed_defect`（`defect_category: "dependency_or_service_spec"`）または `confirmed_regression`。
+   - オフライン環境で公式ドキュメントを参照できない場合や、アカウント固定のAPIバージョン・契約プラン・実サービス挙動に依存する場合 → `needs_validation`（確認すべき公式仕様・ステージング確認手順付き）。
+   - 機能破損のない軽微なバージョン遅れや早期非推奨通知 → `quality_notes`（非不具合の保守メモ）。
 
 ### 過剰モック・トートロジー防止ルール
 
@@ -82,6 +94,7 @@
   - [CONFIG-BUILD-AND-LIFECYCLE.md](skills/release-check/CONFIG-BUILD-AND-LIFECYCLE.md) — 設定優先順位、Feature Flag半実装、起動順序、アップグレード/ダウングレード、ヘルスチェック、コンテナ/マニフェスト
   - [AI-AGENT-AND-LLM-WORKFLOWS.md](skills/release-check/AI-AGENT-AND-LLM-WORKFLOWS.md) — Toolスキーマとディスパッチのズレ、プロンプト構築/切り詰め、JSONパース失敗、無限ループ、RAG同期、MCPプロトコル
   - [NATIVE-DESKTOP-AND-SYSTEMS.md](skills/release-check/NATIVE-DESKTOP-AND-SYSTEMS.md) — リソースリーク、スレッド/ロック競合、FFI/ABI不整合、ローカルIPCフレーミング、OS差異、インストーラ/自動更新
+  - [DEPENDENCIES-AND-EXTERNAL-SERVICES.md](skills/release-check/DEPENDENCIES-AND-EXTERNAL-SERVICES.md) — 導入済みライブラリAPI誤用、浮動バージョン範囲、ランタイムEOL、廃止済み外部エンドポイント/LLMモデルID/APIバージョン、最新レスポンス/Webhookスキーマとの乖離
 
 ## 5つの判定（Verdict）
 
@@ -134,8 +147,8 @@ Skills CLIに対応していない環境では、`skills/release-check/` ディ�
 
 ```text
 このリポジトリの包括的な機能品質監査（release-check）を実行して。
-既存テストの盲点（過剰モック・弱いアサーション）を確認した上で、
-隔離テスト環境での実テストや scratch 内の仮想テスト（未配線プローブ・障害注入・境界値・並行レース）も
+既存テストの盲点（過剰モック・弱いアサーション）と利用ライブラリ・外部サービスの最新仕様ズレを確認した上で、
+隔離テスト環境での実テストや scratch 内の仮想テスト（未配線プローブ・障害注入・境界値・並行レース・最新仕様準拠検証）も
 組み合わせて隠れた不具合を調査し、レポートと検証用成果物を出力して。
 ```
 
@@ -191,6 +204,7 @@ node --test \
 | [CONFIG-BUILD-AND-LIFECYCLE.md](skills/release-check/CONFIG-BUILD-AND-LIFECYCLE.md) | 設定・ビルド・ライフサイクル用欠陥クラス |
 | [AI-AGENT-AND-LLM-WORKFLOWS.md](skills/release-check/AI-AGENT-AND-LLM-WORKFLOWS.md) | AIエージェント・LLMワークフロー用欠陥クラス |
 | [NATIVE-DESKTOP-AND-SYSTEMS.md](skills/release-check/NATIVE-DESKTOP-AND-SYSTEMS.md) | ネイティブ・デスクトップ・ローカルIPC用欠陥クラス |
+| [DEPENDENCIES-AND-EXTERNAL-SERVICES.md](skills/release-check/DEPENDENCIES-AND-EXTERNAL-SERVICES.md) | 利用ライブラリ・ランタイム・外部サービス最新仕様ズレ用欠陥クラス |
 | [feature-catalog-schema.json](skills/release-check/feature-catalog-schema.json) | `feature-catalog.json` のJSONスキーマ |
 | [report-schema.json](skills/release-check/report-schema.json) | `findings.json`（5判定）のJSONスキーマ |
 
